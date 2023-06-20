@@ -1,42 +1,47 @@
 version: "3"
 
 services:
-  db:
+  emapp-db:
     image: mysql
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
+    # command: --default-authentication-plugin=mysql_native_password
+    # restart: always
+    ports:
+      - 3306:3306
     environment:
       - MYSQL_ROOT_PASSWORD=letmein
       - MYSQL_DATABASE=emapp
-    ports:
-      - 3306:3306
-    expose:
-      - 3306
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=letmein
     volumes:
       - dbdata:/var/lib/mysql
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 9000:8080
-  backend:
-    build:
-      context: ./em-app        
-    ports:
-      - "8080:8080"
-    expose:
-      - 8080
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/emapp?autoReconnect=true&useSSL=false
+    container_name: emapp-db
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - "9000:8080"
+  emapp-backend:
     depends_on:
-      - db
-  frontend:
+      - emapp-db
+    build:
+      context: ./em-app    
+      dockerfile: Dockerfile    
+    ports:
+      - 8080:8080
+    environment:
+        SPRING_DATASOURCE_URL: jdbc:mysql://emapp-db:3306/emapp?autoReconnect=true&useSSL=false
+        SPRING_DATASOURCE_USERNAME: user
+        SPRING_DATASOURCE_PASSWORD: letmein
+    links:
+      - emapp-db:emapp=db
+    container_name: emapp-backend
+  emapp-frontend:
     build: 
       context: ./em-app-front
+      dockerfile: Dockerfile
     ports:
-      - "4200:4200"
-    expose:
-      - 4200
+      - 4200:80
+    container_name: emapp-frontend
 
 volumes:
   dbdata:
